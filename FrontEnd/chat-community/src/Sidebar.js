@@ -17,27 +17,40 @@ import { useState } from "react";
 import { useEffect } from "react";
 
 const Sidebar = () => {
+  let backEndURL = "http://localhost:9000";
   const user = useSelector(selectUser);
   const [channels, setChannels] = useState([]);
 
   useEffect(() => {
-    db.collection("channels").onSnapshot((snapshot) => {
-      setChannels(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          channel: doc.data(),
-        }))
-      );
-    });
+    fetch(`${backEndURL}/getchannel`)
+      .then((res) => {
+        setChannels(
+          res.map((channel) => {
+            return { id: channel.id, channelName: channel.channelName };
+          })
+        );
+      })
+      .catch((err) => {
+        alert(err.message);
+      });
   }, []);
 
   const handleAddChannel = (e) => {
     e.preventDefault();
     const channelName = prompt("Enter a new channel name");
     if (channelName) {
-      db.collection("channels").add({
-        channelName: channelName,
-      });
+      fetch(`${backEndURL}/addchannel`, {
+        method: "POST",
+        header: { "Content-Type": "application/json" },
+        body: JSON.stringify(channelName),
+      })
+        .then((res) => {
+          alert(res);
+          alert(`${channelName} added successfully`);
+        })
+        .catch((err) => {
+          alert(err.message);
+        });
     }
   };
 
@@ -59,13 +72,11 @@ const Sidebar = () => {
         </div>
 
         <div className="sidebar__channelsList">
-          {channels.map(({ id, channel }) => (
-            <SidebarChannel
-              key={id}
-              id={id}
-              channelName={channel.channelName}
-            />
-          ))}
+          {channels.length &&
+            channels.map(({ id, channelName }) => (
+              <SidebarChannel key={id} id={id} channelName={channelName} />
+            ))}
+          {!channels.length && <div>No Channels Created</div>}
         </div>
       </div>
 
